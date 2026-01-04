@@ -102,6 +102,48 @@
       stroke-linecap: round;
       transition: stroke-dashoffset 0.1s linear;
     }
+
+    /* Confetti animation */
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .confetti-piece {
+      position: fixed;
+      top: 0;
+      animation: confetti-fall 3s ease-out forwards;
+    }
+
+    /* Star animation */
+    @keyframes star-pop {
+      0% {
+        transform: scale(0) rotate(-30deg);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.3) rotate(10deg);
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .star-animate {
+      animation: star-pop 0.5s ease-out forwards;
+    }
+
+    /* Golden glow */
+    .golden-glow {
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.4);
+    }
   </style>
 </head>
 <body class="font-nunito">
@@ -757,32 +799,114 @@
       );
     }
 
+    // Confetti Component
+    function Confetti() {
+      const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA'];
+      const pieces = Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 8 + 6,
+      }));
+
+      return (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {pieces.map(piece => (
+            <div
+              key={piece.id}
+              className="confetti-piece"
+              style={{
+                left: `${piece.left}%`,
+                animationDelay: `${piece.delay}s`,
+                backgroundColor: piece.color,
+                width: `${piece.size}px`,
+                height: `${piece.size}px`,
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+              }}
+            />
+          ))}
+        </div>
+      );
+    }
+
     // Results Screen
     function ResultsScreen({ answers, totalTime, settings, onPlayAgain, onNewPractice }) {
       const [mistakesExpanded, setMistakesExpanded] = useState(false);
+      const [showConfetti, setShowConfetti] = useState(true);
 
       const correct = answers.filter(a => a.correct).length;
       const total = answers.length;
       const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
       const mistakes = answers.filter(a => !a.correct);
+      const isPerfect = percentage === 100 && total > 0;
+
+      const perfectMessages = [
+        "Perfect!",
+        "Amazing!",
+        "Flawless!",
+        "You're a math star!",
+        "Incredible!",
+        "Nailed it!",
+      ];
+      const perfectMessage = perfectMessages[Math.floor(Math.random() * perfectMessages.length)];
+
+      // Hide confetti after 3 seconds
+      useEffect(() => {
+        if (isPerfect) {
+          const timer = setTimeout(() => setShowConfetti(false), 3000);
+          return () => clearTimeout(timer);
+        }
+      }, [isPerfect]);
 
       return (
         <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4">
+          {isPerfect && showConfetti && <Confetti />}
+
           <div className="max-w-md mx-auto pt-12">
             {/* Completion Message */}
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-extrabold text-dark-text dark:text-white mb-2">
-                Well done!
+              {isPerfect && (
+                <div className="flex justify-center gap-2 mb-3">
+                  {[0, 1, 2].map(i => (
+                    <span
+                      key={i}
+                      className="star-animate text-4xl"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    >
+                      ⭐
+                    </span>
+                  ))}
+                </div>
+              )}
+              <h1 className={`text-3xl font-extrabold mb-2 ${
+                isPerfect
+                  ? 'text-yellow-500 golden-glow'
+                  : 'text-dark-text dark:text-white'
+              }`}>
+                {isPerfect ? perfectMessage : 'Well done!'}
               </h1>
-              <p className="text-gray-500 dark:text-gray-400">Great practice session</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                {isPerfect ? 'Perfect score!' : 'Great practice session'}
+              </p>
             </div>
 
             {/* Score */}
-            <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-lg mb-6 text-center">
-              <div className="text-5xl font-extrabold text-teal dark:text-dark-teal mb-2">
+            <div className={`bg-white dark:bg-dark-card rounded-2xl p-6 shadow-lg mb-6 text-center ${
+              isPerfect ? 'ring-2 ring-yellow-400' : ''
+            }`}>
+              <div className={`text-5xl font-extrabold mb-2 ${
+                isPerfect
+                  ? 'text-yellow-500 golden-glow'
+                  : 'text-teal dark:text-dark-teal'
+              }`}>
                 {correct}/{total}
               </div>
-              <div className="text-2xl font-bold text-dark-text dark:text-white">
+              <div className={`text-2xl font-bold ${
+                isPerfect
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : 'text-dark-text dark:text-white'
+              }`}>
                 ({percentage}%)
               </div>
               <div className="text-gray-500 dark:text-gray-400 mt-2">
