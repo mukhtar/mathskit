@@ -193,9 +193,20 @@
 
     function generateQuestions(operations, difficulty, count, allowNegatives) {
       const questions = [];
-      for (let i = 0; i < count; i++) {
+      const seen = new Set();
+      let attempts = 0;
+      const maxAttempts = count * 20; // Prevent infinite loop
+
+      while (questions.length < count && attempts < maxAttempts) {
+        attempts++;
         const op = operations[Math.floor(Math.random() * operations.length)];
-        questions.push(generateQuestion(op, difficulty, allowNegatives));
+        const question = generateQuestion(op, difficulty, allowNegatives);
+        const key = `${question.a}${question.symbol}${question.b}`;
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          questions.push(question);
+        }
       }
       return questions;
     }
