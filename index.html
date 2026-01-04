@@ -253,12 +253,15 @@
 
     // Setup Screen
     function SetupScreen({ onStart, settings, setSettings }) {
-      const { operations, difficulty, timed, timerDuration, questionCount, allowNegatives } = settings;
+      const { operations, mixedMode, difficulty, timed, timerDuration, questionCount, allowNegatives } = settings;
       const TIMER_OPTIONS = [5, 10, 15, 30];
       const [showAdvanced, setShowAdvanced] = useState(false);
 
       const toggleOperation = (opId) => {
-        if (operations.includes(opId)) {
+        // Switch to manual mode, deselect mixed
+        if (mixedMode) {
+          setSettings({ ...settings, mixedMode: false, operations: [opId] });
+        } else if (operations.includes(opId)) {
           if (operations.length > 1) {
             setSettings({ ...settings, operations: operations.filter(o => o !== opId) });
           }
@@ -268,12 +271,10 @@
       };
 
       const selectMixed = () => {
-        setSettings({ ...settings, operations: OPERATIONS.map(o => o.id) });
+        setSettings({ ...settings, mixedMode: true, operations: [] });
       };
 
-      const allSelected = operations.length === OPERATIONS.length;
-
-      const canStart = operations.length > 0;
+      const canStart = mixedMode || operations.length > 0;
 
       return (
         <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4">
@@ -291,9 +292,11 @@
                     key={op.id}
                     onClick={() => toggleOperation(op.id)}
                     className={`p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
-                      operations.includes(op.id)
-                        ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
-                        : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                      mixedMode
+                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+                        : operations.includes(op.id)
+                          ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                          : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
                     }`}
                   >
                     <span className="text-xl mr-1">{op.icon}</span>
@@ -304,7 +307,7 @@
               <button
                 onClick={selectMixed}
                 className={`w-full mt-2 p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
-                  allSelected
+                  mixedMode
                     ? 'bg-coral dark:bg-dark-coral text-white'
                     : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
                 }`}
@@ -855,6 +858,7 @@
       const [screen, setScreen] = useState('setup'); // 'setup' | 'practice' | 'results'
       const [settings, setSettings] = useState({
         operations: ['addition'],
+        mixedMode: false,
         difficulty: 'easy',
         timed: false,
         timerDuration: 30,
@@ -874,8 +878,9 @@
       }, [darkMode]);
 
       const handleStart = () => {
+        const ops = settings.mixedMode ? OPERATIONS.map(o => o.id) : settings.operations;
         const qs = generateQuestions(
-          settings.operations,
+          ops,
           settings.difficulty,
           settings.questionCount,
           settings.allowNegatives
@@ -895,8 +900,9 @@
       };
 
       const handlePlayAgain = () => {
+        const ops = settings.mixedMode ? OPERATIONS.map(o => o.id) : settings.operations;
         const qs = generateQuestions(
-          settings.operations,
+          ops,
           settings.difficulty,
           settings.questionCount,
           settings.allowNegatives
