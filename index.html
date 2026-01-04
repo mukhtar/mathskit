@@ -253,7 +253,8 @@
 
     // Setup Screen
     function SetupScreen({ onStart, settings, setSettings }) {
-      const { operations, difficulty, timed, questionCount, allowNegatives } = settings;
+      const { operations, difficulty, timed, timerDuration, questionCount, allowNegatives } = settings;
+      const TIMER_OPTIONS = [5, 10, 15, 30];
       const [showAdvanced, setShowAdvanced] = useState(false);
 
       const toggleOperation = (opId) => {
@@ -319,7 +320,11 @@
                 {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
                   <button
                     key={key}
-                    onClick={() => setSettings({ ...settings, difficulty: key })}
+                    onClick={() => setSettings({
+                      ...settings,
+                      difficulty: key,
+                      timerDuration: DIFFICULTY_CONFIG[key].timer
+                    })}
                     className={`p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
                       difficulty === key
                         ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
@@ -336,24 +341,37 @@
             <div className="mb-4">
               <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl p-3 shadow-md">
                 <span className="font-bold text-dark-text dark:text-white">Timed</span>
-                <div className="flex items-center gap-2">
-                  {timed && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {DIFFICULTY_CONFIG[difficulty].timer}s/question
-                    </span>
-                  )}
-                  <button
-                    onClick={() => setSettings({ ...settings, timed: !timed })}
-                    className={`w-12 h-7 rounded-full transition-all btn-bounce ${
-                      timed ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
-                      timed ? 'translate-x-6' : 'translate-x-1'
-                    }`} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setSettings({ ...settings, timed: !timed })}
+                  className={`w-12 h-7 rounded-full transition-all btn-bounce ${
+                    timed ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                    timed ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
               </div>
+              {timed && (
+                <div className="mt-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Seconds per question</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {TIMER_OPTIONS.map(seconds => (
+                      <button
+                        key={seconds}
+                        onClick={() => setSettings({ ...settings, timerDuration: seconds })}
+                        className={`p-2 rounded-lg font-bold text-sm btn-bounce transition-all shadow-sm ${
+                          timerDuration === seconds
+                            ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                            : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                        }`}
+                      >
+                        {seconds}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Question Count */}
@@ -519,7 +537,7 @@
       const [answers, setAnswers] = useState([]);
       const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong' | null
       const [showingFeedback, setShowingFeedback] = useState(false);
-      const [timeLeft, setTimeLeft] = useState(settings.timed ? DIFFICULTY_CONFIG[settings.difficulty].timer : null);
+      const [timeLeft, setTimeLeft] = useState(settings.timed ? settings.timerDuration : null);
       const [startTime] = useState(Date.now());
 
       const currentQuestion = questions[currentIndex];
@@ -617,7 +635,7 @@
           setFeedback(null);
           setShowingFeedback(false);
           if (settings.timed) {
-            setTimeLeft(DIFFICULTY_CONFIG[settings.difficulty].timer);
+            setTimeLeft(settings.timerDuration);
           }
         }
       };
@@ -659,7 +677,7 @@
                   Question {currentIndex + 1} of {questions.length}
                 </span>
                 {settings.timed && timeLeft !== null && !showingFeedback && (
-                  <CircularTimer timeLeft={timeLeft} totalTime={DIFFICULTY_CONFIG[settings.difficulty].timer} />
+                  <CircularTimer timeLeft={timeLeft} totalTime={settings.timerDuration} />
                 )}
               </div>
               <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -839,6 +857,7 @@
         operations: ['addition'],
         difficulty: 'easy',
         timed: false,
+        timerDuration: 30,
         questionCount: 10,
         allowNegatives: false,
       });
