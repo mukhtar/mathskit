@@ -187,7 +187,7 @@
     const QUESTION_COUNTS = [10, 15, 20, 25];
 
     // ============ Question Generation ============
-    function generateQuestion(operation, difficulty, allowNegatives = false) {
+    function generateQuestion(operation, difficulty, allowNegatives = false, missingNumbers = false) {
       const config = DIFFICULTY_CONFIG[difficulty];
       const { range, tables, tablesExclude } = config;
 
@@ -242,10 +242,28 @@
           a = 1; b = 1; answer = 2; symbol = '+';
       }
 
-      return { a, b, answer, symbol, operation };
+      // Determine missing position: 'a', 'b', or 'result'
+      // For missing numbers mode, randomly choose which part to hide
+      let missingPosition = 'result';
+      let correctAnswer = answer;
+
+      if (missingNumbers) {
+        const positions = ['a', 'b', 'result'];
+        missingPosition = positions[Math.floor(Math.random() * positions.length)];
+
+        if (missingPosition === 'a') {
+          correctAnswer = a;
+        } else if (missingPosition === 'b') {
+          correctAnswer = b;
+        } else {
+          correctAnswer = answer;
+        }
+      }
+
+      return { a, b, answer, symbol, operation, missingPosition, correctAnswer };
     }
 
-    function generateQuestions(operations, difficulty, count, allowNegatives) {
+    function generateQuestions(operations, difficulty, count, allowNegatives, missingNumbers = false) {
       const questions = [];
       const seen = new Set();
       let attempts = 0;
@@ -254,8 +272,9 @@
       while (questions.length < count && attempts < maxAttempts) {
         attempts++;
         const op = operations[Math.floor(Math.random() * operations.length)];
-        const question = generateQuestion(op, difficulty, allowNegatives);
-        const key = `${question.a}${question.symbol}${question.b}`;
+        const question = generateQuestion(op, difficulty, allowNegatives, missingNumbers);
+        // Include missing position in the key to allow same equation with different missing positions
+        const key = `${question.a}${question.symbol}${question.b}:${question.missingPosition}`;
 
         if (!seen.has(key)) {
           seen.add(key);
@@ -307,7 +326,7 @@
 
     // Setup Screen
     function SetupScreen({ onStart, settings, setSettings }) {
-      const { operations, mixedMode, difficulty, timed, timerDuration, questionCount, allowNegatives } = settings;
+      const { operations, mixedMode, difficulty, timed, timerDuration, questionCount, allowNegatives, missingNumbers } = settings;
       const TIMER_OPTIONS = [5, 10, 15, 30];
       const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -464,7 +483,23 @@
                 {showAdvanced ? '▼' : '▶'} Advanced
               </button>
               {showAdvanced && (
-                <div className="mt-2 bg-white dark:bg-dark-card rounded-xl p-3 shadow-md">
+                <div className="mt-2 bg-white dark:bg-dark-card rounded-xl p-3 shadow-md space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-sm text-dark-text dark:text-white">Missing Numbers</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Solve for ? in any position (e.g., 3 + ? = 8)</p>
+                    </div>
+                    <button
+                      onClick={() => setSettings({ ...settings, missingNumbers: !missingNumbers })}
+                      className={`w-12 h-7 rounded-full transition-all btn-bounce ${
+                        missingNumbers ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                        missingNumbers ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-bold text-sm text-dark-text dark:text-white">Allow Negatives</span>
@@ -674,7 +709,7 @@
       const processAnswer = (userAnswer, timedOut) => {
         clearInterval(timerRef.current);
 
-        const isCorrect = !timedOut && userAnswer === currentQuestion.answer;
+        const isCorrect = !timedOut && userAnswer === currentQuestion.correctAnswer;
 
         setAnswers(prev => [...prev, {
           question: currentQuestion,
@@ -752,7 +787,11 @@
             {/* Question */}
             <div className="text-center py-4">
               <div className="text-5xl md:text-6xl font-extrabold text-dark-text dark:text-white mb-3">
-                {currentQuestion.a} {currentQuestion.symbol} {currentQuestion.b} = ?
+                {currentQuestion.missingPosition === 'a' ? '?' : currentQuestion.a}
+                {' '}{currentQuestion.symbol}{' '}
+                {currentQuestion.missingPosition === 'b' ? '?' : currentQuestion.b}
+                {' = '}
+                {currentQuestion.missingPosition === 'result' ? '?' : currentQuestion.answer}
               </div>
 
               {/* Answer Display */}
@@ -766,7 +805,7 @@
                       <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                      {currentQuestion.answer}
+                      {currentQuestion.correctAnswer}
                     </span>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
@@ -780,7 +819,7 @@
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        {currentQuestion.answer}
+                        {currentQuestion.correctAnswer}
                       </span>
                     </div>
                   )
@@ -955,14 +994,18 @@
                     {mistakes.map((m, i) => (
                       <div key={i} className="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                         <div className="font-bold text-dark-text dark:text-white">
-                          {m.question.a} {m.question.symbol} {m.question.b} = ?
+                          {m.question.missingPosition === 'a' ? '?' : m.question.a}
+                          {' '}{m.question.symbol}{' '}
+                          {m.question.missingPosition === 'b' ? '?' : m.question.b}
+                          {' = '}
+                          {m.question.missingPosition === 'result' ? '?' : m.question.answer}
                         </div>
                         <div className="flex gap-4 text-sm mt-1">
                           <span className="text-error">
                             Your answer: {m.userAnswer === 'timeout' ? 'Time out' : m.userAnswer}
                           </span>
                           <span className="text-success">
-                            Correct: {m.question.answer}
+                            Correct: {m.question.correctAnswer}
                           </span>
                         </div>
                       </div>
@@ -1004,6 +1047,7 @@
         timerDuration: 30,
         questionCount: 10,
         allowNegatives: false,
+        missingNumbers: false,
       });
       const [questions, setQuestions] = useState([]);
       const [results, setResults] = useState({ answers: [], totalTime: 0 });
@@ -1023,7 +1067,8 @@
           ops,
           settings.difficulty,
           settings.questionCount,
-          settings.allowNegatives
+          settings.allowNegatives,
+          settings.missingNumbers
         );
         setQuestions(qs);
         setScreen('practice');
@@ -1045,7 +1090,8 @@
           ops,
           settings.difficulty,
           settings.questionCount,
-          settings.allowNegatives
+          settings.allowNegatives,
+          settings.missingNumbers
         );
         setQuestions(qs);
         setResults({ answers: [], totalTime: 0 });
