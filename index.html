@@ -243,13 +243,21 @@
       }
 
       // Determine missing position: 'a', 'b', or 'result'
-      // For missing numbers mode, randomly choose which part to hide
+      // For missing numbers mode, probability varies by difficulty:
+      // Easy: always result, Medium: 25% operand, Hard: 35% operand
       let missingPosition = 'result';
       let correctAnswer = answer;
 
       if (missingNumbers) {
-        const positions = ['a', 'b', 'result'];
-        missingPosition = positions[Math.floor(Math.random() * positions.length)];
+        const rand = Math.random();
+        const missingOperandChance =
+          difficulty === 'easy' ? 0 :
+          difficulty === 'medium' ? 0.25 : 0.35;
+
+        if (rand < missingOperandChance) {
+          // Pick 'a' or 'b' with equal probability
+          missingPosition = Math.random() < 0.5 ? 'a' : 'b';
+        }
 
         if (missingPosition === 'a') {
           correctAnswer = a;
