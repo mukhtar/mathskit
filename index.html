@@ -157,18 +157,21 @@
       easy: {
         range: { min: 1, max: 10 },
         tables: { min: 1, max: 5 },
+        tablesExclude: [],
         timer: 30,
         label: 'Easy'
       },
       medium: {
-        range: { min: 1, max: 20 },
-        tables: { min: 1, max: 10 },
+        range: { min: 5, max: 20 },
+        tables: { min: 2, max: 10 },
+        tablesExclude: [1],
         timer: 10,
         label: 'Medium'
       },
       hard: {
-        range: { min: 1, max: 50 },
-        tables: { min: 1, max: 12 },
+        range: { min: 10, max: 50 },
+        tables: { min: 3, max: 12 },
+        tablesExclude: [1, 2],
         timer: 5,
         label: 'Hard'
       },
@@ -186,9 +189,18 @@
     // ============ Question Generation ============
     function generateQuestion(operation, difficulty, allowNegatives = false) {
       const config = DIFFICULTY_CONFIG[difficulty];
-      const { range, tables } = config;
+      const { range, tables, tablesExclude } = config;
 
       const randRange = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      // Pick random from range, excluding certain values
+      const randRangeExclude = (min, max, exclude = []) => {
+        const validValues = [];
+        for (let i = min; i <= max; i++) {
+          if (!exclude.includes(i)) validValues.push(i);
+        }
+        return validValues[Math.floor(Math.random() * validValues.length)];
+      };
 
       let a, b, answer, symbol;
 
@@ -211,16 +223,16 @@
           break;
 
         case 'multiplication':
-          a = randRange(tables.min, tables.max);
-          b = randRange(tables.min, tables.max);
+          a = randRangeExclude(tables.min, tables.max, tablesExclude);
+          b = randRangeExclude(tables.min, tables.max, tablesExclude);
           answer = a * b;
           symbol = '×';
           break;
 
         case 'division':
           // Generate clean division: pick quotient and divisor, multiply for dividend
-          const quotient = randRange(tables.min, tables.max);
-          b = randRange(tables.min, tables.max);
+          const quotient = randRangeExclude(tables.min, tables.max, tablesExclude);
+          b = randRangeExclude(tables.min, tables.max, tablesExclude);
           a = quotient * b;
           answer = quotient;
           symbol = '÷';
