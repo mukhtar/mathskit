@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MathsKit - Arithmetic Practice</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts - Nunito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            'nunito': ['Nunito', 'sans-serif'],
+          },
+          colors: {
+            // Light mode
+            'warm-white': '#FFF9F5',
+            'warm-card': '#FFFFFF',
+            'teal': '#4ECDC4',
+            'coral': '#FF6B6B',
+            'dark-text': '#2D3436',
+            'success': '#27AE60',
+            'error': '#E74C3C',
+            // Dark mode
+            'dark-bg': '#1A1A2E',
+            'dark-card': '#252542',
+            'dark-teal': '#5DFDCB',
+            'dark-coral': '#FF8A80',
+          },
+          animation: {
+            'bounce-in': 'bounceIn 0.3s ease-out',
+            'shake': 'shake 0.4s ease-in-out',
+            'pulse-success': 'pulseSuccess 0.8s ease-out',
+            'pulse-error': 'pulseError 2s ease-out',
+          },
+          keyframes: {
+            bounceIn: {
+              '0%': { transform: 'scale(0.95)' },
+              '50%': { transform: 'scale(1.05)' },
+              '100%': { transform: 'scale(1)' },
+            },
+            shake: {
+              '0%, 100%': { transform: 'translateX(0)' },
+              '25%': { transform: 'translateX(-5px)' },
+              '75%': { transform: 'translateX(5px)' },
+            },
+            pulseSuccess: {
+              '0%': { backgroundColor: 'rgb(39, 174, 96)' },
+              '100%': { backgroundColor: 'transparent' },
+            },
+            pulseError: {
+              '0%': { backgroundColor: 'rgb(231, 76, 60)' },
+              '100%': { backgroundColor: 'transparent' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .btn-bounce:active {
+      transform: scale(0.95);
+    }
+
+    .btn-bounce {
+      transition: transform 0.1s ease-out;
+    }
+
+    /* Circular timer */
+    .timer-circle {
+      transform: rotate(-90deg);
+    }
+
+    .timer-circle-bg {
+      fill: none;
+      stroke: currentColor;
+      opacity: 0.2;
+    }
+
+    .timer-circle-progress {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.1s linear;
+    }
+  </style>
+</head>
+<body class="font-nunito">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ============ Constants ============
+    const DIFFICULTY_CONFIG = {
+      easy: {
+        range: { min: 1, max: 10 },
+        tables: { min: 1, max: 5 },
+        timer: 30,
+        label: 'Easy'
+      },
+      medium: {
+        range: { min: 1, max: 20 },
+        tables: { min: 1, max: 10 },
+        timer: 10,
+        label: 'Medium'
+      },
+      hard: {
+        range: { min: 1, max: 50 },
+        tables: { min: 1, max: 12 },
+        timer: 5,
+        label: 'Hard'
+      },
+    };
+
+    const OPERATIONS = [
+      { id: 'addition', icon: '+', label: 'Addition' },
+      { id: 'subtraction', icon: '−', label: 'Subtraction' },
+      { id: 'multiplication', icon: '×', label: 'Multiplication' },
+      { id: 'division', icon: '÷', label: 'Division' },
+    ];
+
+    const QUESTION_COUNTS = [10, 15, 20, 25];
+
+    // ============ Question Generation ============
+    function generateQuestion(operation, difficulty, allowNegatives = false) {
+      const config = DIFFICULTY_CONFIG[difficulty];
+      const { range, tables } = config;
+
+      const randRange = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      let a, b, answer, symbol;
+
+      switch (operation) {
+        case 'addition':
+          a = randRange(range.min, range.max);
+          b = randRange(range.min, range.max);
+          answer = a + b;
+          symbol = '+';
+          break;
+
+        case 'subtraction':
+          a = randRange(range.min, range.max);
+          b = randRange(range.min, range.max);
+          if (!allowNegatives && a < b) {
+            [a, b] = [b, a];
+          }
+          answer = a - b;
+          symbol = '−';
+          break;
+
+        case 'multiplication':
+          a = randRange(tables.min, tables.max);
+          b = randRange(tables.min, tables.max);
+          answer = a * b;
+          symbol = '×';
+          break;
+
+        case 'division':
+          // Generate clean division: pick quotient and divisor, multiply for dividend
+          const quotient = randRange(tables.min, tables.max);
+          b = randRange(tables.min, tables.max);
+          a = quotient * b;
+          answer = quotient;
+          symbol = '÷';
+          break;
+
+        default:
+          a = 1; b = 1; answer = 2; symbol = '+';
+      }
+
+      return { a, b, answer, symbol, operation };
+    }
+
+    function generateQuestions(operations, difficulty, count, allowNegatives) {
+      const questions = [];
+      for (let i = 0; i < count; i++) {
+        const op = operations[Math.floor(Math.random() * operations.length)];
+        questions.push(generateQuestion(op, difficulty, allowNegatives));
+      }
+      return questions;
+    }
+
+    // ============ Utility Functions ============
+    function getMaxAnswerDigits(difficulty) {
+      // Estimate max possible answer digits based on difficulty
+      const config = DIFFICULTY_CONFIG[difficulty];
+      // Max addition: max + max (e.g., 50 + 50 = 100 for hard)
+      // Max multiplication: max * max (e.g., 12 * 12 = 144 for hard)
+      if (difficulty === 'hard') return 4; // Up to 2500 for 50*50 or negative
+      if (difficulty === 'medium') return 3; // Up to 400 for 20*20
+      return 2; // Up to 20 for easy
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+    }
+
+    // ============ Components ============
+
+    // Dark Mode Toggle
+    function DarkModeToggle({ darkMode, setDarkMode }) {
+      return (
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="fixed top-4 right-4 z-50 p-2 rounded-full bg-white dark:bg-dark-card shadow-lg btn-bounce"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? (
+            <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          )}
+        </button>
+      );
+    }
+
+    // Setup Screen
+    function SetupScreen({ onStart, settings, setSettings }) {
+      const { operations, difficulty, timed, questionCount, allowNegatives } = settings;
+      const [showAdvanced, setShowAdvanced] = useState(false);
+
+      const toggleOperation = (opId) => {
+        if (operations.includes(opId)) {
+          if (operations.length > 1) {
+            setSettings({ ...settings, operations: operations.filter(o => o !== opId) });
+          }
+        } else {
+          setSettings({ ...settings, operations: [...operations, opId] });
+        }
+      };
+
+      const selectMixed = () => {
+        setSettings({ ...settings, operations: OPERATIONS.map(o => o.id) });
+      };
+
+      const allSelected = operations.length === OPERATIONS.length;
+
+      const canStart = operations.length > 0;
+
+      return (
+        <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4 pb-8">
+          <div className="max-w-md mx-auto pt-12">
+            <h1 className="text-3xl font-extrabold text-center text-dark-text dark:text-white mb-8">
+              MathsKit
+            </h1>
+
+            {/* Operations */}
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Practice</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {OPERATIONS.map(op => (
+                  <button
+                    key={op.id}
+                    onClick={() => toggleOperation(op.id)}
+                    className={`p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                      operations.includes(op.id)
+                        ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                        : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                    }`}
+                  >
+                    <span className="text-2xl mr-2">{op.icon}</span>
+                    {op.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={selectMixed}
+                className={`w-full mt-3 p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                  allSelected
+                    ? 'bg-coral dark:bg-dark-coral text-white'
+                    : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                }`}
+              >
+                🎲 Mixed Challenge
+              </button>
+            </div>
+
+            {/* Difficulty */}
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Difficulty</h2>
+              <div className="grid grid-cols-3 gap-3">
+                {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
+                  <button
+                    key={key}
+                    onClick={() => setSettings({ ...settings, difficulty: key })}
+                    className={`p-4 rounded-xl font-bold btn-bounce transition-all shadow-md ${
+                      difficulty === key
+                        ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                        : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                    }`}
+                  >
+                    {config.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Timer Toggle */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl p-4 shadow-md">
+                <span className="font-bold text-dark-text dark:text-white">Timed</span>
+                <button
+                  onClick={() => setSettings({ ...settings, timed: !timed })}
+                  className={`w-14 h-8 rounded-full transition-all btn-bounce ${
+                    timed ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${
+                    timed ? 'translate-x-7' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              {timed && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  {DIFFICULTY_CONFIG[difficulty].timer} seconds per question
+                </p>
+              )}
+            </div>
+
+            {/* Question Count */}
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Questions</h2>
+              <div className="grid grid-cols-4 gap-3">
+                {QUESTION_COUNTS.map(count => (
+                  <button
+                    key={count}
+                    onClick={() => setSettings({ ...settings, questionCount: count })}
+                    className={`p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                      questionCount === count
+                        ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                        : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+                    }`}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Advanced Options */}
+            <div className="mb-8">
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-gray-500 dark:text-gray-400 text-sm font-semibold"
+              >
+                {showAdvanced ? '▼' : '▶'} Advanced Options
+              </button>
+              {showAdvanced && (
+                <div className="mt-3 bg-white dark:bg-dark-card rounded-xl p-4 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-dark-text dark:text-white">Allow Negatives</span>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Subtraction can have negative answers</p>
+                    </div>
+                    <button
+                      onClick={() => setSettings({ ...settings, allowNegatives: !allowNegatives })}
+                      className={`w-14 h-8 rounded-full transition-all btn-bounce ${
+                        allowNegatives ? 'bg-coral dark:bg-dark-coral' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${
+                        allowNegatives ? 'translate-x-7' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={onStart}
+              disabled={!canStart}
+              className={`w-full p-5 rounded-2xl font-extrabold text-xl shadow-lg btn-bounce transition-all ${
+                canStart
+                  ? 'bg-coral dark:bg-dark-coral text-white hover:opacity-90'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Start Practice
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Circular Timer
+    function CircularTimer({ timeLeft, totalTime }) {
+      const radius = 24;
+      const circumference = 2 * Math.PI * radius;
+      const progress = (timeLeft / totalTime) * circumference;
+
+      const isWarning = timeLeft <= 3;
+
+      return (
+        <div className="relative w-16 h-16">
+          <svg className="timer-circle w-full h-full" viewBox="0 0 56 56">
+            <circle
+              className="timer-circle-bg"
+              cx="28"
+              cy="28"
+              r={radius}
+              strokeWidth="4"
+            />
+            <circle
+              className={`timer-circle-progress ${isWarning ? 'text-error' : 'text-teal dark:text-dark-teal'}`}
+              cx="28"
+              cy="28"
+              r={radius}
+              strokeWidth="4"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference - progress}
+            />
+          </svg>
+          <span className={`absolute inset-0 flex items-center justify-center font-bold text-lg ${
+            isWarning ? 'text-error' : 'text-dark-text dark:text-white'
+          }`}>
+            {timeLeft}
+          </span>
+        </div>
+      );
+    }
+
+    // Number Pad
+    function NumberPad({ onInput, onClear, onBackspace, onSubmit, canSubmit, allowNegative }) {
+      const buttons = [
+        '1', '2', '3',
+        '4', '5', '6',
+        '7', '8', '9',
+        allowNegative ? '−' : 'C', '0', '⌫',
+      ];
+
+      const handleClick = (btn) => {
+        if (btn === 'C') onClear();
+        else if (btn === '⌫') onBackspace();
+        else if (btn === '−') onInput('-');
+        else onInput(btn);
+      };
+
+      return (
+        <div className="w-full max-w-xs mx-auto">
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {buttons.map((btn, i) => (
+              <button
+                key={i}
+                onClick={() => handleClick(btn)}
+                className="p-4 text-2xl font-bold rounded-xl bg-white dark:bg-dark-card text-dark-text dark:text-white shadow-md btn-bounce active:bg-gray-100 dark:active:bg-gray-700"
+              >
+                {btn}
+              </button>
+            ))}
+            {allowNegative && (
+              <button
+                onClick={onClear}
+                className="p-4 text-2xl font-bold rounded-xl bg-white dark:bg-dark-card text-dark-text dark:text-white shadow-md btn-bounce col-span-1"
+              >
+                C
+              </button>
+            )}
+          </div>
+          <button
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            className={`w-full p-4 text-2xl font-extrabold rounded-xl shadow-lg btn-bounce transition-all ${
+              canSubmit
+                ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            GO
+          </button>
+        </div>
+      );
+    }
+
+    // Practice Screen
+    function PracticeScreen({ questions, settings, onComplete, onQuit }) {
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [input, setInput] = useState('');
+      const [answers, setAnswers] = useState([]);
+      const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong' | null
+      const [showingFeedback, setShowingFeedback] = useState(false);
+      const [timeLeft, setTimeLeft] = useState(settings.timed ? DIFFICULTY_CONFIG[settings.difficulty].timer : null);
+      const [startTime] = useState(Date.now());
+
+      const currentQuestion = questions[currentIndex];
+      const maxDigits = getMaxAnswerDigits(settings.difficulty) + (settings.allowNegatives ? 1 : 0);
+
+      const timerRef = useRef(null);
+
+      // Keyboard input
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (showingFeedback) return;
+
+          if (e.key >= '0' && e.key <= '9') {
+            handleInput(e.key);
+          } else if (e.key === 'Backspace') {
+            handleBackspace();
+          } else if (e.key === 'Enter' && input.length > 0) {
+            handleSubmit();
+          } else if (e.key === '-' && settings.allowNegatives && input.length === 0) {
+            handleInput('-');
+          }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [input, showingFeedback]);
+
+      // Timer
+      useEffect(() => {
+        if (!settings.timed || showingFeedback) return;
+
+        timerRef.current = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(timerRef.current);
+              handleTimeout();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timerRef.current);
+      }, [currentIndex, showingFeedback, settings.timed]);
+
+      const handleTimeout = () => {
+        processAnswer(null, true);
+      };
+
+      const handleInput = (digit) => {
+        if (showingFeedback) return;
+        if (input.length >= maxDigits) return;
+        if (digit === '-' && input.length > 0) return;
+        setInput(prev => prev + digit);
+      };
+
+      const handleClear = () => {
+        if (showingFeedback) return;
+        setInput('');
+      };
+
+      const handleBackspace = () => {
+        if (showingFeedback) return;
+        setInput(prev => prev.slice(0, -1));
+      };
+
+      const handleSubmit = () => {
+        if (showingFeedback || input.length === 0) return;
+        const userAnswer = parseInt(input, 10);
+        processAnswer(userAnswer, false);
+      };
+
+      const processAnswer = (userAnswer, timedOut) => {
+        clearInterval(timerRef.current);
+
+        const isCorrect = !timedOut && userAnswer === currentQuestion.answer;
+
+        setAnswers(prev => [...prev, {
+          question: currentQuestion,
+          userAnswer: timedOut ? 'timeout' : userAnswer,
+          correct: isCorrect,
+        }]);
+
+        setFeedback(isCorrect ? 'correct' : 'wrong');
+        setShowingFeedback(true);
+      };
+
+      const handleNext = () => {
+        if (currentIndex + 1 >= questions.length) {
+          const totalTime = Math.floor((Date.now() - startTime) / 1000);
+          onComplete([...answers], totalTime);
+        } else {
+          setCurrentIndex(prev => prev + 1);
+          setInput('');
+          setFeedback(null);
+          setShowingFeedback(false);
+          if (settings.timed) {
+            setTimeLeft(DIFFICULTY_CONFIG[settings.difficulty].timer);
+          }
+        }
+      };
+
+      const handleQuitClick = () => {
+        const totalTime = Math.floor((Date.now() - startTime) / 1000);
+        onQuit(answers, totalTime);
+      };
+
+      // Check if input seems unreasonable
+      const inputWarning = input.length > 0 &&
+        !isNaN(parseInt(input, 10)) &&
+        Math.abs(parseInt(input, 10)) > (settings.difficulty === 'hard' ? 2500 : settings.difficulty === 'medium' ? 400 : 200);
+
+      const progressPercent = ((currentIndex) / questions.length) * 100;
+
+      return (
+        <div className={`min-h-screen p-4 transition-colors duration-300 ${
+          feedback === 'correct' ? 'bg-green-100 dark:bg-dark-bg' :
+          feedback === 'wrong' ? 'bg-red-100 dark:bg-dark-bg' :
+          'bg-warm-white dark:bg-dark-bg'
+        }`}>
+          {/* Header */}
+          <div className="max-w-md mx-auto">
+            {/* Quit button */}
+            <button
+              onClick={handleQuitClick}
+              className="absolute top-4 left-4 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Progress */}
+            <div className="pt-12 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  Question {currentIndex + 1} of {questions.length}
+                </span>
+                {settings.timed && timeLeft !== null && !showingFeedback && (
+                  <CircularTimer timeLeft={timeLeft} totalTime={DIFFICULTY_CONFIG[settings.difficulty].timer} />
+                )}
+              </div>
+              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-teal dark:bg-dark-teal transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Question */}
+            <div className="text-center py-8">
+              <div className="text-5xl md:text-6xl font-extrabold text-dark-text dark:text-white mb-4">
+                {currentQuestion.a} {currentQuestion.symbol} {currentQuestion.b} = ?
+              </div>
+
+              {/* Answer Display */}
+              <div className={`text-4xl font-bold min-h-16 py-3 flex items-center justify-center rounded-xl mx-auto max-w-xs ${
+                inputWarning ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' :
+                'bg-white dark:bg-dark-card text-dark-text dark:text-white'
+              } shadow-md`}>
+                {showingFeedback ? (
+                  feedback === 'correct' ? (
+                    <span className="text-success flex items-center gap-2">
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      {currentQuestion.answer}
+                    </span>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-error flex items-center gap-2 text-2xl">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                        {answers[answers.length - 1]?.userAnswer === 'timeout' ? 'Time out' : answers[answers.length - 1]?.userAnswer}
+                      </span>
+                      <span className="text-success flex items-center gap-1 text-xl">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {currentQuestion.answer}
+                      </span>
+                    </div>
+                  )
+                ) : (
+                  input || <span className="text-gray-300 dark:text-gray-600">?</span>
+                )}
+              </div>
+            </div>
+
+            {/* Number Pad or Next Button */}
+            {showingFeedback ? (
+              <div className="mt-8">
+                <button
+                  onClick={handleNext}
+                  className="w-full max-w-xs mx-auto block p-4 text-xl font-extrabold rounded-xl bg-teal dark:bg-dark-teal text-white dark:text-dark-bg shadow-lg btn-bounce"
+                >
+                  {currentIndex + 1 >= questions.length ? 'See Results' : 'Next'}
+                </button>
+              </div>
+            ) : (
+              <NumberPad
+                onInput={handleInput}
+                onClear={handleClear}
+                onBackspace={handleBackspace}
+                onSubmit={handleSubmit}
+                canSubmit={input.length > 0 && !isNaN(parseInt(input, 10))}
+                allowNegative={settings.allowNegatives}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Results Screen
+    function ResultsScreen({ answers, totalTime, settings, onPlayAgain, onNewPractice }) {
+      const [mistakesExpanded, setMistakesExpanded] = useState(false);
+
+      const correct = answers.filter(a => a.correct).length;
+      const total = answers.length;
+      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+      const mistakes = answers.filter(a => !a.correct);
+
+      return (
+        <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4">
+          <div className="max-w-md mx-auto pt-12">
+            {/* Completion Message */}
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-extrabold text-dark-text dark:text-white mb-2">
+                Well done!
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400">Great practice session</p>
+            </div>
+
+            {/* Score */}
+            <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-lg mb-6 text-center">
+              <div className="text-5xl font-extrabold text-teal dark:text-dark-teal mb-2">
+                {correct}/{total}
+              </div>
+              <div className="text-2xl font-bold text-dark-text dark:text-white">
+                ({percentage}%)
+              </div>
+              <div className="text-gray-500 dark:text-gray-400 mt-2">
+                Time: {formatTime(totalTime)}
+              </div>
+            </div>
+
+            {/* Mistakes */}
+            {mistakes.length > 0 && (
+              <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg mb-8 overflow-hidden">
+                <button
+                  onClick={() => setMistakesExpanded(!mistakesExpanded)}
+                  className="w-full p-4 flex items-center justify-between text-left"
+                >
+                  <span className="font-bold text-dark-text dark:text-white">
+                    {mistakes.length} mistake{mistakes.length > 1 ? 's' : ''} - tap to review
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transition-transform ${mistakesExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {mistakesExpanded && (
+                  <div className="border-t border-gray-100 dark:border-gray-700">
+                    {mistakes.map((m, i) => (
+                      <div key={i} className="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                        <div className="font-bold text-dark-text dark:text-white">
+                          {m.question.a} {m.question.symbol} {m.question.b} = ?
+                        </div>
+                        <div className="flex gap-4 text-sm mt-1">
+                          <span className="text-error">
+                            Your answer: {m.userAnswer === 'timeout' ? 'Time out' : m.userAnswer}
+                          </span>
+                          <span className="text-success">
+                            Correct: {m.question.answer}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={onPlayAgain}
+                className="p-4 rounded-xl font-bold text-lg bg-teal dark:bg-dark-teal text-white dark:text-dark-bg shadow-lg btn-bounce"
+              >
+                Play Again
+              </button>
+              <button
+                onClick={onNewPractice}
+                className="p-4 rounded-xl font-bold text-lg bg-coral dark:bg-dark-coral text-white shadow-lg btn-bounce"
+              >
+                New Practice
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main App
+    function App() {
+      const [darkMode, setDarkMode] = useState(false);
+      const [screen, setScreen] = useState('setup'); // 'setup' | 'practice' | 'results'
+      const [settings, setSettings] = useState({
+        operations: ['addition'],
+        difficulty: 'easy',
+        timed: false,
+        questionCount: 10,
+        allowNegatives: false,
+      });
+      const [questions, setQuestions] = useState([]);
+      const [results, setResults] = useState({ answers: [], totalTime: 0 });
+
+      // Apply dark mode class
+      useEffect(() => {
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }, [darkMode]);
+
+      const handleStart = () => {
+        const qs = generateQuestions(
+          settings.operations,
+          settings.difficulty,
+          settings.questionCount,
+          settings.allowNegatives
+        );
+        setQuestions(qs);
+        setScreen('practice');
+      };
+
+      const handleComplete = (answers, totalTime) => {
+        setResults({ answers, totalTime });
+        setScreen('results');
+      };
+
+      const handleQuit = (answers, totalTime) => {
+        setResults({ answers, totalTime });
+        setScreen('results');
+      };
+
+      const handlePlayAgain = () => {
+        const qs = generateQuestions(
+          settings.operations,
+          settings.difficulty,
+          settings.questionCount,
+          settings.allowNegatives
+        );
+        setQuestions(qs);
+        setResults({ answers: [], totalTime: 0 });
+        setScreen('practice');
+      };
+
+      const handleNewPractice = () => {
+        setResults({ answers: [], totalTime: 0 });
+        setScreen('setup');
+      };
+
+      return (
+        <div className="font-nunito">
+          <DarkModeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
+
+          {screen === 'setup' && (
+            <SetupScreen
+              onStart={handleStart}
+              settings={settings}
+              setSettings={setSettings}
+            />
+          )}
+
+          {screen === 'practice' && (
+            <PracticeScreen
+              questions={questions}
+              settings={settings}
+              onComplete={handleComplete}
+              onQuit={handleQuit}
+            />
+          )}
+
+          {screen === 'results' && (
+            <ResultsScreen
+              answers={results.answers}
+              totalTime={results.totalTime}
+              settings={settings}
+              onPlayAgain={handlePlayAgain}
+              onNewPractice={handleNewPractice}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
