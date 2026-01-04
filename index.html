@@ -264,34 +264,34 @@
       const canStart = operations.length > 0;
 
       return (
-        <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4 pb-8">
-          <div className="max-w-md mx-auto pt-12">
-            <h1 className="text-3xl font-extrabold text-center text-dark-text dark:text-white mb-8">
+        <div className="min-h-screen bg-warm-white dark:bg-dark-bg p-4">
+          <div className="max-w-md mx-auto pt-4">
+            <h1 className="text-2xl font-extrabold text-center text-dark-text dark:text-white mb-4">
               MathsKit
             </h1>
 
             {/* Operations */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Practice</h2>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-dark-text dark:text-white mb-2">Practice</h2>
+              <div className="grid grid-cols-2 gap-2">
                 {OPERATIONS.map(op => (
                   <button
                     key={op.id}
                     onClick={() => toggleOperation(op.id)}
-                    className={`p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                    className={`p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
                       operations.includes(op.id)
                         ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
                         : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
                     }`}
                   >
-                    <span className="text-2xl mr-2">{op.icon}</span>
+                    <span className="text-xl mr-1">{op.icon}</span>
                     {op.label}
                   </button>
                 ))}
               </div>
               <button
                 onClick={selectMixed}
-                className={`w-full mt-3 p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                className={`w-full mt-2 p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
                   allSelected
                     ? 'bg-coral dark:bg-dark-coral text-white'
                     : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
@@ -302,14 +302,14 @@
             </div>
 
             {/* Difficulty */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Difficulty</h2>
-              <div className="grid grid-cols-3 gap-3">
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-dark-text dark:text-white mb-2">Difficulty</h2>
+              <div className="grid grid-cols-3 gap-2">
                 {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
                   <button
                     key={key}
                     onClick={() => setSettings({ ...settings, difficulty: key })}
-                    className={`p-4 rounded-xl font-bold btn-bounce transition-all shadow-md ${
+                    className={`p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
                       difficulty === key
                         ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
                         : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
@@ -322,36 +322,38 @@
             </div>
 
             {/* Timer Toggle */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl p-4 shadow-md">
+            <div className="mb-4">
+              <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl p-3 shadow-md">
                 <span className="font-bold text-dark-text dark:text-white">Timed</span>
-                <button
-                  onClick={() => setSettings({ ...settings, timed: !timed })}
-                  className={`w-14 h-8 rounded-full transition-all btn-bounce ${
-                    timed ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${
-                    timed ? 'translate-x-7' : 'translate-x-1'
-                  }`} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {timed && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {DIFFICULTY_CONFIG[difficulty].timer}s/question
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setSettings({ ...settings, timed: !timed })}
+                    className={`w-12 h-7 rounded-full transition-all btn-bounce ${
+                      timed ? 'bg-teal dark:bg-dark-teal' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                      timed ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
               </div>
-              {timed && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
-                  {DIFFICULTY_CONFIG[difficulty].timer} seconds per question
-                </p>
-              )}
             </div>
 
             {/* Question Count */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-dark-text dark:text-white mb-3">Questions</h2>
-              <div className="grid grid-cols-4 gap-3">
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-dark-text dark:text-white mb-2">Questions</h2>
+              <div className="grid grid-cols-4 gap-2">
                 {QUESTION_COUNTS.map(count => (
                   <button
                     key={count}
                     onClick={() => setSettings({ ...settings, questionCount: count })}
-                    className={`p-4 rounded-xl font-bold text-lg btn-bounce transition-all shadow-md ${
+                    className={`p-3 rounded-xl font-bold btn-bounce transition-all shadow-md ${
                       questionCount === count
                         ? 'bg-teal dark:bg-dark-teal text-white dark:text-dark-bg'
                         : 'bg-white dark:bg-dark-card text-dark-text dark:text-white'
@@ -364,28 +366,28 @@
             </div>
 
             {/* Advanced Options */}
-            <div className="mb-8">
+            <div className="mb-4">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-gray-500 dark:text-gray-400 text-sm font-semibold"
+                className="text-gray-500 dark:text-gray-400 text-xs font-semibold"
               >
-                {showAdvanced ? '▼' : '▶'} Advanced Options
+                {showAdvanced ? '▼' : '▶'} Advanced
               </button>
               {showAdvanced && (
-                <div className="mt-3 bg-white dark:bg-dark-card rounded-xl p-4 shadow-md">
+                <div className="mt-2 bg-white dark:bg-dark-card rounded-xl p-3 shadow-md">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-bold text-dark-text dark:text-white">Allow Negatives</span>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Subtraction can have negative answers</p>
+                      <span className="font-bold text-sm text-dark-text dark:text-white">Allow Negatives</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Subtraction can have negative answers</p>
                     </div>
                     <button
                       onClick={() => setSettings({ ...settings, allowNegatives: !allowNegatives })}
-                      className={`w-14 h-8 rounded-full transition-all btn-bounce ${
+                      className={`w-12 h-7 rounded-full transition-all btn-bounce ${
                         allowNegatives ? 'bg-coral dark:bg-dark-coral' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${
-                        allowNegatives ? 'translate-x-7' : 'translate-x-1'
+                      <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                        allowNegatives ? 'translate-x-6' : 'translate-x-1'
                       }`} />
                     </button>
                   </div>
@@ -397,7 +399,7 @@
             <button
               onClick={onStart}
               disabled={!canStart}
-              className={`w-full p-5 rounded-2xl font-extrabold text-xl shadow-lg btn-bounce transition-all ${
+              className={`w-full p-4 rounded-2xl font-extrabold text-lg shadow-lg btn-bounce transition-all ${
                 canStart
                   ? 'bg-coral dark:bg-dark-coral text-white hover:opacity-90'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -640,7 +642,7 @@
             </button>
 
             {/* Progress */}
-            <div className="pt-12 mb-4">
+            <div className="pt-8 mb-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                   Question {currentIndex + 1} of {questions.length}
@@ -658,8 +660,8 @@
             </div>
 
             {/* Question */}
-            <div className="text-center py-8">
-              <div className="text-5xl md:text-6xl font-extrabold text-dark-text dark:text-white mb-4">
+            <div className="text-center py-4">
+              <div className="text-5xl md:text-6xl font-extrabold text-dark-text dark:text-white mb-3">
                 {currentQuestion.a} {currentQuestion.symbol} {currentQuestion.b} = ?
               </div>
 
