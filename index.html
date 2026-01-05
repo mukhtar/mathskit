@@ -643,6 +643,7 @@
       const [showingFeedback, setShowingFeedback] = useState(false);
       const [timeLeft, setTimeLeft] = useState(settings.timed ? settings.timerDuration : null);
       const [startTime] = useState(Date.now());
+      const [streak, setStreak] = useState(0);
 
       const currentQuestion = questions[currentIndex];
       const maxDigits = getMaxAnswerDigits(settings.difficulty) + (settings.allowNegatives ? 1 : 0);
@@ -719,6 +720,13 @@
 
         const isCorrect = !timedOut && userAnswer === currentQuestion.correctAnswer;
 
+        // Update streak
+        if (isCorrect) {
+          setStreak(prev => prev + 1);
+        } else {
+          setStreak(0);
+        }
+
         setAnswers(prev => [...prev, {
           question: currentQuestion,
           userAnswer: timedOut ? 'timeout' : userAnswer,
@@ -790,6 +798,14 @@
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
+              {/* Streak Counter */}
+              {streak >= 2 && (
+                <div className="mt-2 text-center">
+                  <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-sm font-bold animate-bounce-in">
+                    🔥 {streak} in a row!
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Question */}
