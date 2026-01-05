@@ -894,7 +894,7 @@
     }
 
     // Results Screen
-    function ResultsScreen({ answers, totalTime, settings, onPlayAgain, onNewPractice, onPracticeMistakes }) {
+    function ResultsScreen({ answers, totalTime, settings, isRetrySession, onPlayAgain, onNewPractice, onPracticeMistakes }) {
       const [mistakesExpanded, setMistakesExpanded] = useState(false);
       const [showConfetti, setShowConfetti] = useState(true);
 
@@ -902,7 +902,7 @@
       const total = answers.length;
       const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
       const mistakes = answers.filter(a => !a.correct);
-      const isPerfect = percentage === 100 && total > 0;
+      const isPerfect = percentage === 100 && total > 0 && !isRetrySession;
 
       const perfectMessages = [
         "Perfect!",
@@ -1069,6 +1069,7 @@
       });
       const [questions, setQuestions] = useState([]);
       const [results, setResults] = useState({ answers: [], totalTime: 0 });
+      const [isRetrySession, setIsRetrySession] = useState(false);
 
       // Apply dark mode class
       useEffect(() => {
@@ -1089,6 +1090,7 @@
           settings.missingNumbers
         );
         setQuestions(qs);
+        setIsRetrySession(false);
         setScreen('practice');
       };
 
@@ -1113,6 +1115,7 @@
         );
         setQuestions(qs);
         setResults({ answers: [], totalTime: 0 });
+        setIsRetrySession(false);
         setScreen('practice');
       };
 
@@ -1124,6 +1127,7 @@
       const handlePracticeMistakes = (mistakeQuestions) => {
         setQuestions(mistakeQuestions);
         setResults({ answers: [], totalTime: 0 });
+        setIsRetrySession(true);
         setScreen('practice');
       };
 
@@ -1153,6 +1157,7 @@
               answers={results.answers}
               totalTime={results.totalTime}
               settings={settings}
+              isRetrySession={isRetrySession}
               onPlayAgain={handlePlayAgain}
               onNewPractice={handleNewPractice}
               onPracticeMistakes={handlePracticeMistakes}
