@@ -894,7 +894,7 @@
     }
 
     // Results Screen
-    function ResultsScreen({ answers, totalTime, settings, onPlayAgain, onNewPractice }) {
+    function ResultsScreen({ answers, totalTime, settings, onPlayAgain, onNewPractice, onPracticeMistakes }) {
       const [mistakesExpanded, setMistakesExpanded] = useState(false);
       const [showConfetti, setShowConfetti] = useState(true);
 
@@ -1024,19 +1024,29 @@
             )}
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={onPlayAgain}
-                className="p-4 rounded-xl font-bold text-lg bg-teal dark:bg-dark-teal text-white dark:text-dark-bg shadow-lg btn-bounce"
-              >
-                Play Again
-              </button>
-              <button
-                onClick={onNewPractice}
-                className="p-4 rounded-xl font-bold text-lg bg-coral dark:bg-dark-coral text-white shadow-lg btn-bounce"
-              >
-                New Practice
-              </button>
+            <div className="space-y-3">
+              {mistakes.length > 0 && (
+                <button
+                  onClick={() => onPracticeMistakes(mistakes.map(m => m.question))}
+                  className="w-full p-4 rounded-xl font-bold text-lg bg-amber-500 dark:bg-amber-600 text-white shadow-lg btn-bounce"
+                >
+                  Practice {mistakes.length} Mistake{mistakes.length > 1 ? 's' : ''} Again
+                </button>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={onPlayAgain}
+                  className="p-4 rounded-xl font-bold text-lg bg-teal dark:bg-dark-teal text-white dark:text-dark-bg shadow-lg btn-bounce"
+                >
+                  Play Again
+                </button>
+                <button
+                  onClick={onNewPractice}
+                  className="p-4 rounded-xl font-bold text-lg bg-coral dark:bg-dark-coral text-white shadow-lg btn-bounce"
+                >
+                  New Practice
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1111,6 +1121,12 @@
         setScreen('setup');
       };
 
+      const handlePracticeMistakes = (mistakeQuestions) => {
+        setQuestions(mistakeQuestions);
+        setResults({ answers: [], totalTime: 0 });
+        setScreen('practice');
+      };
+
       return (
         <div className="font-nunito">
           <DarkModeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
@@ -1139,6 +1155,7 @@
               settings={settings}
               onPlayAgain={handlePlayAgain}
               onNewPractice={handleNewPractice}
+              onPracticeMistakes={handlePracticeMistakes}
             />
           )}
         </div>
