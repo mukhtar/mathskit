@@ -1056,7 +1056,10 @@
 
     // Main App
     function App() {
-      const [darkMode, setDarkMode] = useState(false);
+      const [darkMode, setDarkMode] = useState(() => {
+        const hour = new Date().getHours();
+        return hour >= 18 || hour < 6;
+      });
       const [screen, setScreen] = useState('setup'); // 'setup' | 'practice' | 'results'
       const [settings, setSettings] = useState({
         operations: ['addition'],
